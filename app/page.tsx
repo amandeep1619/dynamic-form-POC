@@ -1,147 +1,172 @@
 'use client';
 import { useState } from 'react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Eye, Layout, Save, ChevronLeft, Download } from 'lucide-react';
+import { DndContext, closestCorners, DragOverEvent } from '@dnd-kit/core';
+import { Layout, Save, Eye, ChevronLeft, PlusCircle } from 'lucide-react';
 
-// Your Components
 import Sidebar from '@/components/Sidebar';
-import SortableField from '@/components/SortableField';
+import BuilderRow from '@/components/BuildRow'; // Ensure the filename is correct (BuilderRow vs BuildRow)
 import FormPreview from '@/components/FormPreview';
-import { FieldType, FormElement } from '@/types/form';
+import { FormRow, FieldType, FormField } from '@/types/form';
+
+const MAX_FIELDS_PER_ROW = 2;
 
 export default function Home() {
-  const [elements, setElements] = useState<FormElement[]>([]);
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  // Start with an empty array so the "Create your form" message shows up
+  const [rows, setRows] = useState<FormRow[]>([]);
   const [isPreview, setIsPreview] = useState(false);
-  const sensors = useSensors(useSensor(PointerSensor));
+  const [formData, setFormData] = useState<Record<string, any>>({});
 
-  // --- BUILDER LOGIC ---
-  const addElement = (type: FieldType) => {
-    const newElement: FormElement = {
-      id: `field_${crypto.randomUUID().split('-')[0]}`, // Clean IDs for DB keys
+  const addField = (type: FieldType) => {
+    const newField: FormField = {
+      id: `field_${crypto.randomUUID().split('-')[0]}`,
       type,
-      label: `New ${type.replace('_', ' ')} Label`,
-      options: ['Option 1', 'Option 2'], // Default options for choice-based fields
+      label: `New ${type.replace('_', ' ')}`,
+      options: ['YES', 'NO']
     };
-    setElements([...elements, newElement]);
+    // Add a new row containing the field
+    setRows([...rows, { id: `row_${Date.now()}`, fields: [newField] }]);
   };
 
-  const updateLabel = (id: string, newLabel: string) => {
-    setElements(elements.map(el => el.id === id ? { ...el, label: newLabel } : el));
-  };
-
-  const updateOptions = (id: string, options: string[]) => {
-    setElements(elements.map(el => el.id === id ? { ...el, options } : el));
-  };
-
-  const updateValue = (id: string, value: any) => {
-    setFormData(prev => ({ ...prev, [id]: value }));
-  };
-
-  // --- THE "SAVE" LOGIC ---
-  const handleSave = () => {
-    // 1. Prepare the JSON Payload
-    const formTemplate = {
-      templateName: "Clinical Drug Request Form v1", // You could make this editable
-      createdAt: new Date().toISOString(),
-      version: "1.0",
-      // This 'schema' is what the "Renderer" uses to build the UI
-      schema: elements, 
-      // Optional: Save default values entered during design
-      defaultValues: formData 
-    };
-
-    // 2. Log for POC purposes
-    console.log("--- SAVING TO DATABASE ---");
-    console.log(JSON.stringify(formTemplate, null, 2));
-    
-    // 3. Visual feedback
-    alert("Form Schema generated! Check Console (F12) to see the JSON payload ready for DB.");
-    
-    // Here is where you would do:
-    // await fetch('/api/save-form', { method: 'POST', body: JSON.stringify(formTemplate) });
-  };
-
-  const handleDragEnd = (event: any) => {
+  const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
-      setElements((items) => {
-        const oldIndex = items.findIndex((i) => i.id === active.id);
-        const newIndex = items.findIndex((i) => i.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
+    if (!over) return;
+
+    const activeId = active.id;
+    const overId = over.id;
+
+    setRows((prev) => {
+      const activeRow = prev.find((r) => r.fields.find((f) => f.id === activeId));
+      const overRow = prev.find((r) => r.id === overId || r.fields.find((f) => f.id === overId));
+
+      if (!activeRow || !overRow || activeRow === overRow) return prev;
+
+      if (overRow.fields.length < MAX_FIELDS_PER_ROW) {
+        const activeField = activeRow.fields.find((f) => f.id === activeId)!;
+        return prev.map((r) => {
+          if (r.id === activeRow.id) return { ...r, fields: r.fields.filter((f) => f.id !== activeId) };
+          if (r.id === overRow.id) return { ...r, fields: [...r.fields, activeField] };
+          return r;
+        }).filter(r => r.fields.length > 0); // Remove rows that become empty
+      }
+      return prev;
+    });
   };
+
+  const updateOptions = (fId: string, options: string[]) => {
+  setRows(rows.map(r => ({
+    ...r,
+    fields: r.fields.map(f => f.id === fId ? { ...f, options } : f)
+  })));
+};
+const saveTemplate = () => {
+  // We structure the payload to include metadata and the layout grid
+  const templatePayload = {
+    metadata: {
+      templateName: "EBS-101 EAP Participant Eligibility Form",
+      version: "0.2",
+      author: "WepConnect Designer",
+      lastModified: new Date().toISOString(),
+    },
+    // The 'layout' property preserves the row-column structure
+    layout: rows.map((row, rowIndex) => ({
+      rowId: row.id,
+      order: rowIndex,
+      columns: row.fields.map((field, colIndex) => ({
+        columnOrder: colIndex,
+        fieldId: field.id,
+        type: field.type,
+        label: field.label,
+        options: field.options || [], // Captures the custom radio/select options
+      })),
+    })),
+  };
+
+  // 1. Log to console for your review
+  console.log("DATABASE PAYLOAD:", JSON.stringify(templatePayload, null, 2));
+
+  // 2. Logic for POC: Download as JSON file (optional)
+  // const blob = new Blob([JSON.stringify(templatePayload, null, 2)], { type: 'application/json' });
+  // const url = URL.createObjectURL(blob);
+  // const link = document.createElement('a');
+  // link.href = url;
+  // link.download = `template_${Date.now()}.json`;
+  // link.click();
+
+  alert("Template Schema generated and saved to console!");
+};
 
   return (
-    <div className="flex h-screen bg-[#f1f5f9] text-slate-900">
-      {!isPreview && <Sidebar onAdd={addElement} />}
+    <div className="flex h-screen bg-[#F8FAFC]">
+      {!isPreview && <Sidebar onAdd={addField} />}
       
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Navbar */}
-        <nav className="h-20 bg-white border-b border-slate-200 px-8 flex justify-between items-center shrink-0 shadow-sm z-30">
-          <div className="flex items-center gap-4">
+        <nav className="h-20 bg-white border-b flex justify-between items-center px-8 shadow-sm z-10">
+          <div className="flex items-center gap-3">
             {isPreview && (
-              <button onClick={() => setIsPreview(false)} className="p-2 hover:bg-slate-100 rounded-full transition-all">
-                <ChevronLeft size={24} />
+              <button onClick={() => setIsPreview(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <ChevronLeft />
               </button>
             )}
-            <h1 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-              <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">W</div>
-              WepConnect<span className="text-indigo-600 italic font-medium">Design</span>
-            </h1>
+            <h1 className="font-black text-xl tracking-tight text-slate-800 uppercase">Wep Connect</h1>
           </div>
-          
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <button 
               onClick={() => setIsPreview(!isPreview)}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm border-2 border-slate-100 hover:border-indigo-500 transition-all bg-white"
+              className="cursor-pointer flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-slate-100 hover:border-indigo-500 transition-all bg-white"
             >
-              {isPreview ? <Layout size={18} className="text-indigo-500"/> : <Eye size={18} className="text-indigo-500"/>}
-              {isPreview ? 'Designer' : 'Live Preview'}
+              {isPreview ? <Layout size={18} className="text-indigo-600"/> : <Eye size={18} className="text-indigo-600"/>}
+              {isPreview ? 'Back to Design' : 'Live Preview'}
             </button>
             <button 
-              onClick={handleSave}
-              className="bg-indigo-600 text-white px-8 py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2"
+              onClick={saveTemplate}
+              className="cursor-pointer bg-indigo-600 text-white px-8 py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-200 flex items-center gap-2 transition-transform active:scale-95"
             >
-              <Save size={18}/>
-              Save Template
+              <Save size={18}/> Save Template
             </button>
           </div>
         </nav>
 
-        {/* Canvas Area */}
         <div className="flex-1 overflow-y-auto p-12 bg-slate-50/50">
           {isPreview ? (
-            <FormPreview elements={elements} formData={formData} updateValue={updateValue} />
+            <FormPreview 
+              rows={rows} 
+              formData={formData} 
+              updateValue={(id, val) => setFormData({...formData, [id]: val})} 
+            />
           ) : (
-            <div className="max-w-3xl mx-auto bg-white min-h-[85vh] rounded-[3rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-slate-100 p-20 relative">
-               <div className="absolute top-0 left-0 right-0 h-4 bg-indigo-600 rounded-t-[3rem]"></div>
-              
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={elements} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-4">
-                    {elements.map((el) => (
-                      <SortableField 
-                        key={el.id} 
-                        element={el} 
-                        onUpdateLabel={updateLabel}
+            <div className="max-w-4xl mx-auto min-h-full">
+              {rows.length > 0 ? (
+                <div className="space-y-4">
+                  <DndContext collisionDetection={closestCorners} onDragOver={handleDragOver}>
+                    {rows.map((row) => (
+                      <BuilderRow 
+                        key={row.id} 
+                        row={row} 
                         onUpdateOptions={updateOptions}
-                        onRemove={() => setElements(elements.filter(e => e.id !== el.id))} 
+                        onUpdate={(fId, label) => setRows(rows.map(r => ({...r, fields: r.fields.map(f => f.id === fId ? {...f, label} : f)})))}
+                        onRemove={(fId) => setRows(rows.map(r => ({...r, fields: r.fields.filter(f => f.id !== fId)})) .filter(r => r.fields.length > 0))}
                       />
                     ))}
+                  </DndContext>
+                  
+                  {/* Visual Drop Zone Hint */}
+                  <div className="py-8 border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center text-slate-400 font-medium text-sm">
+                    Drop more fields here or drag items to create columns
                   </div>
-                </SortableContext>
-              </DndContext>
-
-              {elements.length === 0 && (
-                <div className="h-[50vh] flex flex-col items-center justify-center text-slate-300">
-                  <div className="w-24 h-24 rounded-[2rem] bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center mb-6">
-                    <Download size={40} className="text-slate-200" />
+                </div>
+              ) : (
+                /* EMPTY STATE / GETTING STARTED MESSAGE */
+                <div className="flex flex-col items-center justify-center py-32 bg-white border-2 border-dashed border-slate-200 rounded-[3rem] shadow-sm">
+                  <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
+                    <PlusCircle className="text-indigo-600 w-10 h-10" />
                   </div>
-                  <p className="text-lg font-bold text-slate-500">Form is empty</p>
-                  <p className="text-sm text-slate-400 mt-1">Select elements from the sidebar to begin</p>
+                  <h2 className="text-2xl font-black text-slate-800 tracking-tight">Create your form</h2>
+                  <p className="text-slate-500 font-medium mt-2">Select fields from the left sidebar to start building</p>
+                  
+                  <div className="mt-10 flex gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    <span className="px-3 py-1 bg-slate-50 rounded-full border border-slate-100">Drag to reorder</span>
+                    <span className="px-3 py-1 bg-slate-50 rounded-full border border-slate-100">Max 2 columns per row</span>
+                  </div>
                 </div>
               )}
             </div>
