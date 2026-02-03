@@ -1,147 +1,126 @@
-// components/SortableField.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { 
   GripVertical, 
   Trash2, 
+  Settings2, 
   Plus, 
-  X, 
-  Settings2 
+  X 
 } from 'lucide-react';
-import { FormElement } from '@/types/form';
+import { FormField } from '@/types/form';
 
 interface SortableFieldProps {
-  element: FormElement;
-  onRemove: () => void;
+  field: FormField;
+  onRemove: (id: string) => void;
   onUpdateLabel: (id: string, label: string) => void;
-  onUpdateOptions: (id: string, options: string[]) => void;
+  onUpdateOptions: (id: string, options: string[]) => void; // New prop
 }
 
 export default function SortableField({ 
-  element, 
+  field, 
   onRemove, 
   onUpdateLabel, 
   onUpdateOptions 
 }: SortableFieldProps) {
-  
-  const { 
-    attributes, 
-    listeners, 
-    setNodeRef, 
-    transform, 
-    transition, 
-    isDragging 
-  } = useSortable({ id: element.id });
+  const [showSettings, setShowSettings] = useState(false);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: field.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 50 : 0,
+    zIndex: isDragging ? 50 : 0
   };
 
-  // Logic to determine if this field needs an options editor
-  const supportsOptions = ['select', 'radio', 'checkbox_group'].includes(element.type);
+  const supportsOptions = ['select', 'radio', 'checkbox_group'].includes(field.type);
 
-  // --- Option Management Handlers ---
+  // --- Option Handlers ---
   const addOption = () => {
-    const currentOptions = element.options || [];
-    onUpdateOptions(element.id, [...currentOptions, `New Option ${currentOptions.length + 1}`]);
+    const currentOptions = field.options || [];
+    onUpdateOptions(field.id, [...currentOptions, `Option ${currentOptions.length + 1}`]);
+  };
+
+  const editOption = (index: number, value: string) => {
+    const newOptions = [...(field.options || [])];
+    newOptions[index] = value;
+    onUpdateOptions(field.id, newOptions);
   };
 
   const removeOption = (index: number) => {
-    const newOptions = (element.options || []).filter((_, i) => i !== index);
-    onUpdateOptions(element.id, newOptions);
-  };
-
-  const editOption = (index: number, newValue: string) => {
-    const newOptions = [...(element.options || [])];
-    newOptions[index] = newValue;
-    onUpdateOptions(element.id, newOptions);
+    onUpdateOptions(field.id, (field.options || []).filter((_, i) => i !== index));
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group flex flex-col bg-white border-2 rounded-2xl transition-all duration-200 ${
-        isDragging 
-          ? 'shadow-2xl border-blue-500 opacity-90 scale-[1.02] z-50' 
-          : 'border-slate-100 hover:border-blue-200 hover:shadow-md'
+      className={`relative flex flex-col bg-white border rounded-xl shadow-sm transition-all ${
+        isDragging ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-slate-200'
       }`}
     >
-      {/* Main Field Row */}
-      <div className="flex items-center gap-4 p-5">
-        {/* Drag Handle */}
-        <div 
-          {...attributes} 
-          {...listeners} 
-          className="cursor-grab p-2 text-slate-300 hover:text-blue-500 transition-colors"
-        >
-          <GripVertical size={20} />
+      <div className="flex items-center gap-3 p-4">
+        <div {...attributes} {...listeners} className="cursor-grab text-slate-300 hover:text-indigo-500">
+          <GripVertical size={18} />
         </div>
 
-        {/* Label Editor */}
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-              {element.type.replace('_', ' ')}
-            </span>
-          </div>
+          <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1">
+            {field.type}
+          </p>
           <input
-            type="text"
-            value={element.label}
-            onChange={(e) => onUpdateLabel(element.id, e.target.value)}
-            className="w-full text-lg font-bold text-slate-800 bg-transparent outline-none focus:text-blue-600 placeholder:text-slate-300"
-            placeholder="Field Label (e.g., Participant Weight)"
+            value={field.label}
+            onChange={(e) => onUpdateLabel(field.id, e.target.value)}
+            className="w-full font-bold text-slate-700 outline-none bg-transparent focus:text-indigo-600"
+            placeholder="Enter Field Label..."
           />
         </div>
 
-        {/* Delete Button */}
-        <button
-          onClick={onRemove}
-          className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-          title="Remove Field"
-        >
-          <Trash2 size={18} />
-        </button>
+        <div className="flex gap-1">
+          {supportsOptions && (
+            <button 
+              onClick={() => setShowSettings(!showSettings)}
+              className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-indigo-50 text-indigo-600' : 'text-slate-300 hover:bg-slate-50'}`}
+            >
+              <Settings2 size={16} />
+            </button>
+          )}
+          <button onClick={() => onRemove(field.id)} className="p-2 text-slate-300 hover:text-red-500">
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* Options Editor (Only shows for Select/Radio/Checkbox Group) */}
-      {supportsOptions && (
-        <div className="px-5 pb-5 ml-12">
-          <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Settings2 size={14} className="text-slate-400" />
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                Configuration Choices
-              </span>
-            </div>
-            
+      {/* OPTION EDITOR PANEL */}
+      {showSettings && supportsOptions && (
+        <div className="px-4 pb-4 animate-in fade-in slide-in-from-top-2">
+          <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+            <p className="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Manage Choices</p>
             <div className="space-y-2">
-              {element.options?.map((option, index) => (
-                <div key={index} className="flex items-center gap-2 animate-in fade-in zoom-in duration-200">
-                  <input
-                    type="text"
-                    value={option}
-                    onChange={(e) => editOption(index, e.target.value)}
-                    className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 focus:border-blue-400 focus:ring-2 focus:ring-blue-50 outline-none transition-all"
+              {field.options?.map((opt, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <input 
+                    value={opt}
+                    onChange={(e) => editOption(idx, e.target.value)}
+                    className="flex-1 text-xs p-2 rounded border border-slate-200 focus:border-indigo-400 outline-none"
                   />
-                  <button
-                    onClick={() => removeOption(index)}
-                    className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
-                  >
+                  <button onClick={() => removeOption(idx)} className="text-slate-300 hover:text-red-500">
                     <X size={14} />
                   </button>
                 </div>
               ))}
-              
-              <button
+              <button 
                 onClick={addOption}
-                className="mt-3 flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1.5 rounded-lg transition-all"
+                className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:underline pt-1"
               >
-                <Plus size={14} />
-                Add Choice
+                <Plus size={12} /> Add Option
               </button>
             </div>
           </div>

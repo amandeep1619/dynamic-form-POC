@@ -1,10 +1,19 @@
-export type FieldType = 'header' | 'instruction' | 'text' | 'date' | 'select' | 'radio' | 'checkbox_group';
+export type FieldType = 'header' | 'instruction' | 'text' | 'date' | 'select' | 'radio';
 
-export interface FormElement {
+export interface FormField {
   id: string;
-  type: FieldType;
+  type: string;
   label: string;
-  placeholder?: string;
-  options?: string[]; // For select, radio, and checkboxes
-  required?: boolean;
+  options?: string[];
+}
+
+export interface FormRow {
+  id: string;
+  fields: FormField[];
+}
+
+export interface FormSection {
+  id: string;
+  title: string;
+  rows: FormRow[];
 }
