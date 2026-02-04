@@ -178,7 +178,7 @@ export default function Home () {
         <nav className="h-20 bg-white border-b flex justify-between items-center px-8 shadow-sm z-10">
           <div className="flex items-center gap-3">
             {isPreview && <button onClick={() => setIsPreview(false)} className="p-2 hover:bg-slate-100 rounded-full"><ChevronLeft /></button>}
-            <h1 className="font-black text-xl tracking-tight text-slate-800 uppercase italic">Wep Connect</h1>
+            <h1 className="font-normal text-2xl tracking-tight text-slate-800"><strong>WEP</strong> <span className=" text-[16px]">With Every Patient</span></h1>
           </div>
           <div className="flex gap-4">
             <button onClick={addSection} className="cursor-pointer flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
@@ -239,10 +239,10 @@ export default function Home () {
                           onUpdateOptions={(fId, opts) => {
                             setSections(sections.map(s => ({ ...s, rows: s.rows.map(r => ({ ...r, fields: r.fields.map(f => f.id === fId ? { ...f, options: opts } : f) })) })));
                           }}
-                          onUpdate={(fId, label) => {
+                          onUpdate={(fId: string, label: any) => {
                             setSections(sections.map(s => ({ ...s, rows: s.rows.map(r => ({ ...r, fields: r.fields.map(f => f.id === fId ? { ...f, label } : f) })) })));
                           }}
-                          onRemove={(fId) => {
+                          onRemove={(fId: string) => {
                             setSections(sections.map(s => ({ ...s, rows: s.rows.map(r => ({ ...r, fields: r.fields.filter(f => f.id !== fId) })).filter(r => r.fields.length > 0) })));
                           }}
                         />

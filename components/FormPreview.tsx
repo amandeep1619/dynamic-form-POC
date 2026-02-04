@@ -72,8 +72,81 @@ export default function FormPreview({ sections, formData, updateValue }: Preview
                           </div>
                         )}
 
-                        {/* Radio/Select Styling */}
-                        {(el.type === 'select' || el.type === 'radio') && (
+                          {/* Email */}
+                        {(el.type === 'email') && (
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                              {el.label}
+                            </label>
+                             <input 
+                              type={el.type} 
+                              value={val}
+                              onChange={(e) => updateValue(el.id, e.target.value)}
+                              className="border-b border-slate-300 focus:border-slate-900 outline-none py-1.5 bg-transparent text-sm font-semibold transition-colors"
+                            />
+                          </div>
+                        )}
+
+                       {/* Number */}
+                        {(el.type === 'number') && (
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                              {el.label}
+                            </label>
+                             <input 
+                              type={el.type} 
+                              value={val}
+                              onChange={(e) => updateValue(el.id, e.target.value)}
+                              className="border-b border-slate-300 focus:border-slate-900 outline-none py-1.5 bg-transparent text-sm font-semibold transition-colors"
+                            />
+                          </div>
+                        )}
+
+                         {/* Textarea */}
+                        {(el.type === 'textarea') && (
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                              {el.label}
+                            </label>
+                            <textarea 
+                              // type={el.type} 
+                              value={val}
+                              onChange={(e) => updateValue(el.id, e.target.value)}
+                              className="border-b border-slate-300 focus:border-slate-900 outline-none py-1.5 bg-transparent text-sm font-semibold transition-colors"
+                            />
+                          </div>
+                        )}
+
+
+                        {/* Select Styling */}
+                            {el.type === "select" && (
+                            <div className="flex flex-col gap-2">
+                            <label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                                  {el.label}
+                            </label>
+                            
+                                <select
+                                  name={el.id}
+                                  value={val || ""}
+                                  onChange={(e) => updateValue(el.id, e.target.value)}
+                                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-[11px] font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                            >
+                            <option value="" disabled>
+                                    Select an option
+                            </option>
+                            
+                                  {el.options?.map((opt) => (
+                            <option key={opt} value={opt}>
+                                      {opt}
+                            </option>
+                                  ))}
+                            </select>
+                            </div>
+                            )}
+
+
+                        {/* Radio Styling */}
+                        {el.type === 'radio' && (
                           <div className="flex flex-col gap-2">
                             <label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
                               {el.label}
@@ -83,6 +156,29 @@ export default function FormPreview({ sections, formData, updateValue }: Preview
                                 <label key={opt} className="flex items-center gap-2.5 cursor-pointer group">
                                   <input 
                                     type="radio" 
+                                    name={el.id} 
+                                    checked={val === opt}
+                                    onChange={() => updateValue(el.id, opt)}
+                                    className="w-3.5 h-3.5 border-slate-300 text-slate-900 focus:ring-slate-900" 
+                                  /> 
+                                  <span className="text-[11px] font-bold text-slate-800 uppercase tracking-tight">{opt}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Checkbox/Select Styling */}
+                        {(el.type === 'checkbox_group' || el.type === 'checkbox_group') && (
+                          <div className="flex flex-col gap-2">
+                            <label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                              {el.label}
+                            </label>
+                            <div className="flex gap-8 mt-1">
+                              {el.options?.map(opt => (
+                                <label key={opt} className="flex items-center gap-2.5 cursor-pointer group">
+                                  <input 
+                                    type="checkbox" 
                                     name={el.id} 
                                     checked={val === opt}
                                     onChange={() => updateValue(el.id, opt)}
