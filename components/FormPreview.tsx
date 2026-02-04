@@ -107,7 +107,6 @@ export default function FormPreview({ sections, formData, updateValue }: Preview
       {/* Versioning Footer */}
       <div className="mt-24 pt-6 border-t border-slate-200 flex justify-between text-[9px] text-slate-400 font-bold uppercase tracking-[0.15em]">
         <span>Version: 0.2</span>
-        <span>Page 1 of 1</span>
         <span>Date: {new Date().toLocaleDateString('en-GB')}</span>
       </div>
     </div>

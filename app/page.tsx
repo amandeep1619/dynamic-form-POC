@@ -51,65 +51,77 @@ export default function Home () {
   };
 
   // 2. IMPROVED ADD FIELD: Always targets a section, creates one if missing
-  const addField = (type: FieldType) => {
-    const newField: FormField = {
-      id: `field_${crypto.randomUUID().split('-')[0]}`,
-      type,
-      label: `New ${type.replace('_', ' ')}`,
-      options: ['YES', 'NO']
-    };
+const addField = (type: FieldType) => {
+  const newField: FormField = {
+    id: `field_${crypto.randomUUID().split('-')[0]}`,
+    type,
+    label: `New ${type.replace('_', ' ')}`,
+    options: ['YES', 'NO']
+  };
 
-    setSections(prev => {
-      let currentSections = [...prev];
+  setSections(prev => {
+    const targetId = activeSectionId || (prev.length > 0 ? prev[prev.length - 1].id : null);
+    
+    // If no section exists, create one with the field
+    if (!targetId) {
+      const newSecId = `section_${Date.now()}`;
+      return [{
+        id: newSecId,
+        title: "SECTION 1",
+        rows: [{ id: `row_${Date.now()}`, fields: [newField] }]
+      }];
+    }
 
-      // Safety check: if somehow sections is empty, create one
-      if (currentSections.length === 0) {
-        const newSecId = `section_${Date.now()}`;
-        return [{
-          id: newSecId,
-          title: "SECTION 1",
-          rows: [{ id: `row_${Date.now()}`, fields: [newField] }]
-        }];
+    return prev.map(sec => {
+      if (sec.id === targetId) {
+        // ALWAYS create a new row as per your original functionality
+        return {
+          ...sec,
+          rows: [...sec.rows, { id: `row_${Date.now()}`, fields: [newField] }]
+        };
       }
-
-      // Target the active section, or the last one created
-      const targetId = activeSectionId || currentSections[currentSections.length - 1].id;
-
-      return currentSections.map(sec => {
-        if (sec.id === targetId) {
-          return {
-            ...sec,
-            rows: [...sec.rows, { id: `row_${Date.now()}`, fields: [newField] }]
-          };
-        }
-        return sec;
-      });
+      return sec;
     });
-  };
+  });
+};
+const handleDragOver = (event: DragOverEvent) => {
+  const { active, over } = event;
+  if (!over) return;
 
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over) return;
+  const activeId = active.id;
+  const overId = over.id;
 
-    setSections(prev => prev.map(section => {
-      const activeRow = section.rows.find((r) => r.fields.find((f) => f.id === active.id));
-      const overRow = section.rows.find((r) => r.id === over.id || r.fields.find((f) => f.id === over.id));
+  setSections(prev => prev.map(section => {
+    // Find where the field is coming from and where it's going
+    const activeRow = section.rows.find(r => r.fields.find(f => f.id === activeId));
+    // The "over" could be the row itself (droppable) or another field inside that row
+    const overRow = section.rows.find(r => r.id === overId || r.fields.find(f => f.id === overId));
 
-      if (!activeRow || !overRow || activeRow === overRow) return section;
+    if (!activeRow || !overRow || activeRow === overRow) return section;
 
-      if (overRow.fields.length < MAX_FIELDS_PER_ROW) {
-        const activeField = activeRow.fields.find((f) => f.id === active.id)!;
-        const updatedRows = section.rows.map((r) => {
-          if (r.id === activeRow.id) return { ...r, fields: r.fields.filter((f) => f.id !== active.id) };
-          if (r.id === overRow.id) return { ...r, fields: [...r.fields, activeField] };
-          return r;
-        }).filter(r => r.fields.length > 0);
+    // Only allow move if target row has space
+    if (overRow.fields.length < MAX_FIELDS_PER_ROW) {
+      const activeField = activeRow.fields.find(f => f.id === activeId)!;
+      
+      const updatedRows = section.rows.map(r => {
+        // 1. Remove from old row
+        if (r.id === activeRow.id) {
+          return { ...r, fields: r.fields.filter(f => f.id !== activeId) };
+        }
+        // 2. Add to new row
+        if (r.id === overRow.id) {
+          return { ...r, fields: [...r.fields, activeField] };
+        }
+        return r;
+      }).filter(r => r.fields.length > 0); // Cleanup empty rows automatically
 
-        return { ...section, rows: updatedRows };
-      }
-      return section;
-    }));
-  };
+      return { ...section, rows: updatedRows };
+    }
+    
+    return section;
+  }));
+};
+
 
   const saveTemplate = () => {
     // Check if we actually have data to save
@@ -210,8 +222,8 @@ export default function Home () {
                   key={section.id}
                   onClick={() => setActiveSectionId(section.id)}
                   className={`relative transition-all duration-300 rounded-[2.5rem] p-10 border-2 cursor-pointer ${activeSectionId === section.id
-                      ? 'border-indigo-500 bg-white shadow-2xl shadow-indigo-100'
-                      : 'border-slate-200 bg-white/60 opacity-80 hover:opacity-100'
+                    ? 'border-indigo-500 bg-white shadow-2xl shadow-indigo-100'
+                    : 'border-slate-200 bg-white/60 opacity-80 hover:opacity-100'
                     }`}
                 >
                   <div className="flex justify-between items-center mb-8">
