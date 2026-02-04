@@ -57,6 +57,12 @@ export default function FormPreview({ sections, formData, updateValue }: Preview
                           </div>
                         )}
 
+                        {el.type === 'header' && (
+                          <div className=" mb-2">
+                            <p className="text-2xl text-blue-900 font-bold leading-relaxed">{el.label}</p>
+                          </div>
+                        )}
+
                         {/* Text & Date Styling */}
                         {(el.type === 'text' || el.type === 'date') && (
                           <div className="flex flex-col gap-1">

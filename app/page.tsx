@@ -204,7 +204,7 @@ export default function Home () {
           {isPreview ? (
             <FormPreview sections={sections} formData={formData} updateValue={(id, val) => setFormData({ ...formData, [id]: val })} />
           ) : (
-            <div className="max-w-4xl mx-auto space-y-8">
+            <div className="max-w-5xl mx-auto space-y-4">
               {sections.map((section) => (
                 <div
                   key={section.id}
@@ -230,7 +230,7 @@ export default function Home () {
                     </button>
                   </div>
 
-                  <div className="space-y-4 min-h-[40px]">
+                  <div className="space-y-4 min-h-10">
                     <DndContext collisionDetection={closestCorners} onDragOver={handleDragOver}>
                       {section.rows.map((row) => (
                         <BuilderRow

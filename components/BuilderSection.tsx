@@ -41,14 +41,14 @@ export default function BuilderSection({
             key={row.id} 
             row={row} 
             onUpdateOptions={onUpdateOptions} // Now properly passed down
-            onUpdate={(fId, label) => {
+            onUpdate={(fId: string, label: any) => {
               const updated = section.rows.map(r => ({
                 ...r, 
                 fields: r.fields.map(f => f.id === fId ? {...f, label} : f)
               }));
               onUpdateRows(updated);
             }}
-            onRemove={(fId) => {
+            onRemove={(fId: string) => {
               const updated = section.rows.map(r => ({
                 ...r, 
                 fields: r.fields.filter(f => f.id !== fId)
