@@ -89,14 +89,14 @@ export default function SortableField({ field }: SortableFieldProps) {
           {supportsOptions && (
             <button 
               onClick={() => setShowSettings(!showSettings)}
-              className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-indigo-50 text-indigo-600' : 'text-slate-300 hover:bg-slate-50'}`}
+              className={`p-2 rounded-lg transition-colors cursor-pointer ${showSettings ? 'bg-indigo-50 text-indigo-600' : 'text-slate-300 hover:bg-slate-50'}`}
             >
               <Settings2 size={16} />
             </button>
           )}
           <button 
             onClick={() => removeField(field.id)} 
-            className="p-2 text-slate-300 hover:text-red-500"
+            className="p-2 text-slate-300 hover:text-red-500 cursor-pointer"
           >
             <Trash2 size={16} />
           </button>
@@ -116,14 +116,14 @@ export default function SortableField({ field }: SortableFieldProps) {
                     onChange={(e) => editOption(idx, e.target.value)}
                     className="flex-1 text-xs p-2 rounded border border-slate-200 focus:border-indigo-400 outline-none"
                   />
-                  <button onClick={() => removeOption(idx)} className="text-slate-300 hover:text-red-500">
+                  <button onClick={() => removeOption(idx)} className="text-slate-300 hover:text-red-500 cursor-pointer">
                     <X size={14} />
                   </button>
                 </div>
               ))}
               <button 
                 onClick={addOption}
-                className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:underline pt-1"
+                className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:underline pt-1 cursor-pointer"
               >
                 <Plus size={12} /> Add Option
               </button>

@@ -12,9 +12,7 @@ interface SectionProps {
 
 export default function BuilderSection({ 
   section, 
-  onUpdateTitle, 
-  onUpdateRows, 
-  onUpdateOptions 
+  onUpdateTitle
 }: SectionProps) {
   const { setNodeRef, isOver } = useDroppable({ id: section.id });
 
@@ -40,21 +38,6 @@ export default function BuilderSection({
           <BuilderRow
             key={row.id} 
             row={row} 
-            onUpdateOptions={onUpdateOptions} // Now properly passed down
-            onUpdate={(fId: string, label: any) => {
-              const updated = section.rows.map(r => ({
-                ...r, 
-                fields: r.fields.map(f => f.id === fId ? {...f, label} : f)
-              }));
-              onUpdateRows(updated);
-            }}
-            onRemove={(fId: string) => {
-              const updated = section.rows.map(r => ({
-                ...r, 
-                fields: r.fields.filter(f => f.id !== fId)
-              })).filter(r => r.fields.length > 0);
-              onUpdateRows(updated);
-            }}
           />
         ))}
       </div>

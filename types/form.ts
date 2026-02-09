@@ -17,3 +17,9 @@ export interface FormSection {
   title: string;
   rows: FormRow[];
 }
+
+export interface Form {
+  id: string;
+  name: string
+  formSection:FormSection[]
+}
