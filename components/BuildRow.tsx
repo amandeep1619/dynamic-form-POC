@@ -1,23 +1,14 @@
+'use client';
 import { useMemo, memo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableField from './SortableField';
 import { FormRow } from '@/types/form';
 
-const BuilderRow = memo(({ 
-  row, 
-  onUpdate, 
-  onRemove, 
-  onUpdateOptions 
-}: { 
-  row: FormRow, 
-  onUpdate: (id: string, label: string) => void, 
-  onRemove: (id: string) => void, 
-  onUpdateOptions: (id: string, options: string[]) => void 
-}) => {
+const BuilderRow = memo(({ row }: { row: FormRow }) => {
   const { setNodeRef, isOver } = useDroppable({ id: row.id });
 
-  // Memoize the IDs to ensure SortableContext doesn't see a new array on every render
+  // Memoize IDs to prevent SortableContext from re-calculating unnecessarily
   const fieldIds = useMemo(() => row.fields.map(f => f.id), [row.fields]);
 
   const gridMap: Record<number, string> = {
@@ -45,9 +36,6 @@ const BuilderRow = memo(({
             <SortableField
               key={field.id}
               field={field}
-              onUpdateLabel={onUpdate}
-              onRemove={onRemove}
-              onUpdateOptions={onUpdateOptions}
             />
           ))}
         </SortableContext>
@@ -55,7 +43,7 @@ const BuilderRow = memo(({
     </div>
   );
 }, (prev, next) => {
-  // Deep check: Only re-render if the row ID changes or the actual field data changes
+  // Deep comparison to prevent re-renders if data hasn't actually changed
   return (
     prev.row.id === next.row.id && 
     prev.row.fields.length === next.row.fields.length &&
@@ -63,7 +51,6 @@ const BuilderRow = memo(({
   );
 });
 
-// Fix for: Component definition is missing display name
 BuilderRow.displayName = 'BuilderRow';
 
 export default BuilderRow;

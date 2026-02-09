@@ -1,3 +1,4 @@
+'use client';
 import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -8,22 +9,22 @@ import {
   Plus, 
   X 
 } from 'lucide-react';
+
 import { FormField } from '@/types/form';
+import { useFormStore } from '@/store/useFormStore'; // Import the store
 
 interface SortableFieldProps {
   field: FormField;
-  onRemove: (id: string) => void;
-  onUpdateLabel: (id: string, label: string) => void;
-  onUpdateOptions: (id: string, options: string[]) => void; // New prop
+  // Look! No function props here.
 }
 
-export default function SortableField({ 
-  field, 
-  onRemove, 
-  onUpdateLabel, 
-  onUpdateOptions 
-}: SortableFieldProps) {
+export default function SortableField({ field }: SortableFieldProps) {
   const [showSettings, setShowSettings] = useState(false);
+
+  // Grab only the specific actions this field needs
+  const updateFieldLabel = useFormStore((state) => state.updateFieldLabel);
+  const updateFieldOptions = useFormStore((state) => state.updateFieldOptions);
+  const removeField = useFormStore((state) => state.removeField);
 
   const {
     attributes,
@@ -32,7 +33,7 @@ export default function SortableField({
     transform,
     transition,
     isDragging
-  } = useSortable({ id: field.id });
+  } = useSortable({ id: field.id, disabled: false });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -42,20 +43,20 @@ export default function SortableField({
 
   const supportsOptions = ['select', 'radio', 'checkbox_group'].includes(field.type);
 
-  // --- Option Handlers ---
+  // --- Logic remains the same, but calls the store directly ---
   const addOption = () => {
     const currentOptions = field.options || [];
-    onUpdateOptions(field.id, [...currentOptions, `Option ${currentOptions.length + 1}`]);
+    updateFieldOptions(field.id, [...currentOptions, `Option ${currentOptions.length + 1}`]);
   };
 
   const editOption = (index: number, value: string) => {
     const newOptions = [...(field.options || [])];
     newOptions[index] = value;
-    onUpdateOptions(field.id, newOptions);
+    updateFieldOptions(field.id, newOptions);
   };
 
   const removeOption = (index: number) => {
-    onUpdateOptions(field.id, (field.options || []).filter((_, i) => i !== index));
+    updateFieldOptions(field.id, (field.options || []).filter((_, i) => i !== index));
   };
 
   return (
@@ -67,6 +68,7 @@ export default function SortableField({
       }`}
     >
       <div className="flex items-center gap-3 p-4">
+        {/* Drag handle */}
         <div {...attributes} {...listeners} className="cursor-grab text-slate-300 hover:text-indigo-500">
           <GripVertical size={18} />
         </div>
@@ -77,7 +79,7 @@ export default function SortableField({
           </p>
           <input
             value={field.label}
-            onChange={(e) => onUpdateLabel(field.id, e.target.value)}
+            onChange={(e) => updateFieldLabel(field.id, e.target.value)}
             className="w-full font-bold text-slate-700 outline-none bg-transparent focus:text-indigo-600"
             placeholder="Enter Field Label..."
           />
@@ -92,13 +94,16 @@ export default function SortableField({
               <Settings2 size={16} />
             </button>
           )}
-          <button onClick={() => onRemove(field.id)} className="p-2 text-slate-300 hover:text-red-500">
+          <button 
+            onClick={() => removeField(field.id)} 
+            className="p-2 text-slate-300 hover:text-red-500"
+          >
             <Trash2 size={16} />
           </button>
         </div>
       </div>
 
-      {/* OPTION EDITOR PANEL */}
+      {/* Settings Panel */}
       {showSettings && supportsOptions && (
         <div className="px-4 pb-4 animate-in fade-in slide-in-from-top-2">
           <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
